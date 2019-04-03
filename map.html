@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+		 <!-- JQUERY CDN -->
+        <script src="${siteurl}/statics/skin/default/js/map/jquery.min.js"></script>
+		  <!-- FONT AWESOME CDN -->
+        <link rel="stylesheet" href="${siteurl}/statics/skin/default/css/map/font-awesome.min.css">
+		<link rel="stylesheet" href="${siteurl}/statics/skin/default/css/map/leaflet.css" />
+		<link rel="stylesheet" href="${siteurl}/statics/skin/default/css/map/leaflet.pm.css" />
+		<link rel="stylesheet" href="${siteurl}/statics/skin/default/css/map/leaflet.contextmenu.css"/>
+		<link rel="stylesheet" href="${siteurl}/statics/skin/default/css/map/MarkerCluster.css"/>
+		<link rel="stylesheet" href="${siteurl}/statics/skin/default/css/map/MarkerCluster.Default.css"/>
+		<script src="${siteurl}/statics/skin/default/js/map/leaflet.js"></script>
+		<script src="${siteurl}/statics/skin/default/js/map/leaflet.contextmenu.js"></script>
+		<title>CHINA</title>
+		<style>
+	        body { margin:0; padding:0; }
+	        #map { position:absolute; top:0; bottom:0; width:100%; }
+            .disable{pointer-events: none;}
+            .a_disable{background-color:#f4f4f4 !important;}
+    	</style>
+	</head>
+	<body>
+		<div id='map'></div>
+		<script src="${siteurl}/statics/skin/default/js/map/leaflet.pm.min.js"></script>
+		<script src="${siteurl}/statics/skin/default/js/map/Leaflet.Control.Custom.js"></script>
+		<script src="${siteurl}/statics/skin/default/js/map/leaflet-ant-path.js"></script>
+		<script src="${siteurl}/statics/skin/default/js/map/wicket.js" type="text/javascript"></script>
+		<script src="${siteurl}/statics/skin/default/js/map/wicket-leaflet.js" type="text/javascript"></script>
+		<script src="${siteurl}/statics/skin/default/js/map/leaflet.markercluster-src.js" type="text/javascript"></script>
+		<script src="${siteurl}/statics/skin/default/js/map/hashmap.js" type="text/javascript"></script>
+		<script src="${siteurl}/statics/skin/default/js/map/mapTools.js" type="text/javascript"></script>
+		<script>
+            var siteUrl = '${siteurl}';
+            var redIcon = L.icon({
+                iconUrl: "${siteurl}/statics/skin/default/img/map/house_red.png",
+                shadowUrl: "${siteurl}/statics/skin/default/img/map/house_red.png",
+                iconSize: [20, 30],
+                iconAnchor: [0, 0],
+                popupAnchor: [1, -34],
+                tooltipAnchor: [16, -28],
+                shadowSize: [20, 30],
+                shadowAnchor: [0, 0],
+            });
+			function showCoordinates (e) {
+				  alert(e.latlng);
+			  }
+			  function centerMap (e) {
+				  map.panTo(e.latlng);
+			  }
+			  function zoomIn (e) {
+				  map.zoomIn();
+			  }
+			  function zoomOut (e) {
+				  map.zoomOut();
+			  }
+			var osmLayer = new L.TileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{minZoom: 5, maxZoom: 18});
+            var wmsLayer = L.tileLayer.wms
+            (
+                'http://192.168.1.9:8111/geoserver/china/wms?',
+                {
+                    layers:'china_xz',
+                }
+            );
+			var normal = L.layerGroup([wmsLayer]),
+			selfway = L.layerGroup(),
+            pointway = L.layerGroup(),
+			machineway = L.layerGroup();
+			var baseLayers = {
+				"底图": normal,
+			}
+             var overLayers = {
+				"铁路": selfway,
+				"点位": pointway,
+				"机房": machineway,
+			}
+			 var map = L.map('map',
+			{
+		        center : 
+		        {
+		            lon :GetQueryString("center") != null ? parseFloat(GetQueryString("center").split(",")[0]) :106.544724,
+		            lat :GetQueryString("center") != null ? parseFloat(GetQueryString("center").split(",")[1]) :29.554942
+		        },
+        		zoom: GetQueryString("zoom") != null ? parseInt(GetQueryString("zoom")) : 7 ,
+				layers: [normal,selfway,pointway,machineway],
+				contextmenu:true,
+				contextmenuWidth:140,
+				  contextmenuItems: [{
+					  text: '显示经纬度',
+					  callback: showCoordinates
+				  }, {
+					  text: '地图中心',
+					  callback: centerMap
+				  }, '-', {
+					  text: '放大',
+					  icon: '${siteurl}/statics/skin/default/img/map/zoom-in.png',
+					  callback: zoomIn
+				  }, {
+					  text: '缩小',
+					  icon: '${siteurl}/statics/skin/default/img/map/zoom-out.png',
+					  callback: zoomOut
+				  }]
+			});
+			map.pm.addControls({
+			  position: 'topleft',
+				drawMarker:GetQueryString("drawMarker") !=null ? GetQueryString("drawMarker") :false,
+                drawPolyline:GetQueryString("drawPolyline")!=null ? GetQueryString("drawPolyline") :false,
+                drawPolygon:GetQueryString("drawPolygon")!=null ? GetQueryString("drawPolygon") :false,
+			  drawRectangle: false,
+			  drawCircle: false,
+                editMode: GetQueryString("editMode")!=null ? GetQueryString("editMode") :false,
+				cutPolygon: false,
+                dragMode: false,
+                removalMode :GetQueryString("removalMode")!=null ? GetQueryString("removalMode") :false,
+			});
+            $('.action-finish').text("结束");
+            $('.action-removeLastVertex').text("回退");
+            $('.action-cancel').text("取消");
+            //新增
+            map.on('pm:create', e => {
+				var test = LeafletToWkt(e.layer);
+				wkts.push({"guid":'',"name":"","data":test});
+				clickButtonLog(e.shape,true,"insert");
+				parent.dojo.publish(e.shape, clickButtonLog(e.shape,false,null));
+            });
+			 //编辑按钮监听
+			map.on('pm:globaleditmodetoggled', e => {
+                parent.dojo.publish('save',e.enabled);
+				if(!e.enabled){
+				    wkts = [];//容器清空，重新入库
+					for (var _layer in e.map._layers){
+						if(e.map._layers[_layer]._latlngs !== undefined || e.map._layers[_layer]._latlng !== undefined) {
+                            wkts.push({"guid":e.map._layers[_layer]._leaflet_id,"name":"","data":LeafletToWkt(e.map._layers[_layer])});
+						}
+					}
+				}
+			});
+			//删除
+			map.on('pm:remove', e => {
+			    var test = LeafletToWkt(e.layer);
+			    for(var wkt in wkts){
+			        if(wkts[wkt].guid == e.layer._leaflet_id){
+                        var index = wkts.indexOf(wkts[wkt]);
+                        if(index > -1){
+                            wkts.splice(index,1);
+                            clickButtonLog(e.shape,true,"delete");
+                        }
+					}
+				}
+			});
+
+            L.control.layers(baseLayers, overLayers).addTo(map);
+            //订阅改变图标
+			parent.dojo.subscribe('alarm',function(guid){
+				console.log(guid);
+				var machineMarker = machinemap.get(guid);
+				machineMarker.setIcon(redIcon);
+            })
+
+		//查询组件
+			/*L.control.custom({
+                position: 'topleft',
+                content : '<div class="input-group">'+
+                          '    <input type="text" id="search" class="form-control input-sm" placeholder="Search">'+
+                          '    <span class="input-group-btn">'+
+                          '        <button class="btn btn-default btn-sm" type="button">Go!</button>'+
+                          '    </span>'+
+                          '</div>',
+                classes : '',
+                style   :
+                {
+                    position: 'absolute',
+                    left: '50px',
+                    top: '0px',
+                    width: '200px',
+                },
+            })
+            .addTo(map);*/
+			
+			//右上组件
+            /*L.control.custom({
+                position: 'topright',
+                content : '<button type="button" class="btn btn-default">'+
+                          '    <i class="fa fa-crosshairs"></i>'+
+                          '</button>'+
+                          '<button type="button" class="btn btn-info">'+
+                          '    <i class="fa fa-compass"></i>'+
+                          '</button>'+
+                          '<button type="button" class="btn btn-primary">'+
+                          '    <i class="fa fa-spinner fa-pulse fa-fw"></i>'+
+                          '</button>'+
+                          '<button type="button" class="btn btn-danger">'+
+                          '    <i class="fa fa-times"></i>'+
+                          '</button>'+
+                          '<button type="button" class="btn btn-success">'+
+                          '    <i class="fa fa-check"></i>'+
+                          '</button>'+
+                          '<button type="button" class="btn btn-warning">'+
+                          '    <i class="fa fa-exclamation-triangle"></i>'+
+                          '</button>',
+                classes : 'btn-group-vertical btn-group-sm',
+                style   :
+                {
+                    margin: '10px',
+                    padding: '0px 0 0 0',
+                    cursor: 'pointer'
+                },
+                datas   :
+                {
+                    'foo': 'bar',
+                },
+                events:
+                {
+                    click: function(data)
+                    {
+                        console.log('wrapper div element clicked');
+                        console.log(data);
+                    },
+                    dblclick: function(data)
+                    {
+                        console.log('wrapper div element dblclicked');
+                        console.log(data);
+                    },
+                    contextmenu: function(data)
+                    {
+                        console.log('wrapper div element contextmenu');
+                        console.log(data);
+                    },
+                }
+            })
+            .addTo(map);*/
+		</script>
+	</body>
+</html>
