@@ -31,6 +31,7 @@
 		<script src="${siteurl}/statics/skin/default/js/map/wicket-leaflet.js" type="text/javascript"></script>
 		<script src="${siteurl}/statics/skin/default/js/map/leaflet.markercluster-src.js" type="text/javascript"></script>
 		<script src="${siteurl}/statics/skin/default/js/map/hashmap.js" type="text/javascript"></script>
+		<script src="${siteurl}/statics/skin/default/js/map/msg.js" type="text/javascript"></script>
 		<script src="${siteurl}/statics/skin/default/js/map/mapTools.js" type="text/javascript"></script>
 		<script>
             var siteUrl = '${siteurl}';
@@ -123,11 +124,11 @@
 				var test = LeafletToWkt(e.layer);
 				wkts.push({"guid":'',"name":"","data":test});
 				clickButtonLog(e.shape,true,"insert");
-				parent.dojo.publish(e.shape, clickButtonLog(e.shape,false,null));
+				dojo.publish(e.shape, clickButtonLog(e.shape,false,null));
             });
 			 //编辑按钮监听
 			map.on('pm:globaleditmodetoggled', e => {
-                parent.dojo.publish('save',e.enabled);
+                dojo.publish('save',e.enabled);
 				if(!e.enabled){
 				    wkts = [];//容器清空，重新入库
 					for (var _layer in e.map._layers){
@@ -153,7 +154,7 @@
 
             L.control.layers(baseLayers, overLayers).addTo(map);
             //订阅改变图标
-			parent.dojo.subscribe('alarm',function(guid){
+			dojo.subscribe('alarm',function(guid){
 				console.log(guid);
 				var machineMarker = machinemap.get(guid);
 				machineMarker.setIcon(redIcon);
